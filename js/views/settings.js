@@ -13,8 +13,9 @@ export function renderSettings() {
     <div class="mut sm">Editing the list changes which items must be ticked to unlock Log trade.</div></section>
   <section class="card"><div class="eyebrow">NOTIFICATIONS</div>
     ${NOTIF.map(([id, lab]) => `<button class="toggle ${S.settings.notif[id] ? 'on' : ''}" data-act="notif" data-id="${id}"><span>${lab}</span><b>${S.settings.notif[id] ? 'On' : 'Off'}</b></button>`).join('')}
-    <div class="mut sm">Permission: ${perm}. iOS cannot schedule notifications while the app is closed, so reminders fire only while the app is open and show as banners. For closed-app alerts, add reminders.ics to Calendar (see README).</div>
-    ${perm === 'default' ? `<button class="btn ghost wide" data-act="askNotif">Allow notifications</button>` : ''}
+    ${S.pushOn && perm === 'granted'
+      ? `<div class="banner ok"><b>PUSH ON</b><span>Reminders arrive even when the app is closed.</span></div><button class="btn ghost wide" data-act="pushOff">Turn off notifications</button>`
+      : `<button class="btn amberbg wide" data-act="pushOn">Turn on notifications</button><div class="mut sm">${perm === 'denied' ? 'Blocked in iOS Settings. Enable under Settings, Notifications, LOCK IN.' : 'On iPhone, open the app from its Home Screen icon first. Permission: ' + perm + '.'}</div>`}
   </section>
   <section class="card"><div class="eyebrow">DATA</div>
     <button class="btn wide" data-act="exportFile">Export JSON file</button>

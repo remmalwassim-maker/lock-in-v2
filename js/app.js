@@ -4,6 +4,7 @@ import { S, save, dayRec, uid } from './store.js'
 import { nowMs, todayKey, secNow, hhmmNow } from './clock.js'
 import { prayerDay, refresh } from './prayer.js'
 import { esc, clock, countdown, openSheet, closeSheet, sheetOpen } from './ui.js'
+import { enablePush, disablePush, syncPush } from './push.js'
 import { renderNow } from './views/now.js'
 import { renderToday, nightKey } from './views/today.js'
 import { renderTrain, CATS } from './views/train.js'
@@ -40,7 +41,8 @@ function render() {
 }
 const renderToasts = () => { $('#toasts').innerHTML = toasts.map((t, i) => `<div class="toast ${t.kind || ''}" data-act="dismissToast" data-i="${i}"><b>${esc(t.title)}</b>${t.body ? `<span>${esc(t.body)}</span>` : ''}</div>`).join('') }
 function toast(title, body, kind) { toasts.push({ title, body, kind }); if (toasts.length > 3) toasts.shift(); renderToasts() }
-const commit = () => { save(); render() }
+let syncT = null
+const commit = () => { save(); render(); clearTimeout(syncT); syncT = setTimeout(syncPush, 1500) } // keeps the push server in step
 
 // ---------------- helpers for sheets ----------------
 const radio = (name, opts, sel) => `<div class="seg">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}" ${v === sel ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div>`
@@ -133,7 +135,12 @@ const actions = {
   openSettings: () => { route.sub = 'settings'; render(); window.scrollTo(0, 0) },
   closeSettings: () => { route.sub = null; render() },
   notif: (d) => { S.settings.notif[d.id] = !S.settings.notif[d.id]; commit() },
-  askNotif: async () => { try { await Notification.requestPermission() } catch {} render() },
+  pushOn: async (d, el) => {
+    el.disabled = true; el.textContent = 'Turning on...'
+    try { await enablePush(); toast('Notifications on', 'Reminders now arrive with the app closed.', 'ok') } catch (e) { toast('Could not turn on', e.message, 'bad') }
+    render()
+  },
+  pushOff: async () => { await disablePush(); toast('Notifications off'); render() },
   exportFile: () => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ST.exportJSON()], { type: 'application/json' })); a.download = `lock-in-${todayKey()}.json`
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000)
@@ -204,7 +211,8 @@ document.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-lo
 // ---------------- reminders ----------------
 async function fire(r) {
   toast(r.title, '', 'amber')
-  try { if ('Notification' in window && Notification.permission === 'granted') { const reg = await navigator.serviceWorker.ready; reg.showNotification('LOCK IN', { body: r.title, tag: r.id, icon: 'icons/icon-192.png' }) } } catch {}
+  // with server push on, the system alert comes from the server instead
+  try { if (!S.pushOn && 'Notification' in window && Notification.permission === 'granted') { const reg = await navigator.serviceWorker.ready; reg.showNotification('LOCK IN', { body: r.title, tag: r.id, icon: 'icons/icon-192.png' }) } } catch {}
 }
 function checkReminders(c) {
   const fajr = c.pd?.Fajr ? L.toMin(c.pd.Fajr) : null
