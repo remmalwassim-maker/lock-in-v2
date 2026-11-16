@@ -121,3 +121,14 @@ test('day score: ticks 70% + training 30% on weekdays', () => {
   s.sessions.push({ date: '2026-11-18', min: 90 })
   assert.equal(L.dayScore(s, '2026-11-18'), 70 + 15)
 })
+
+test('no scheduled breaks; gap shows work-first until work is done, then earned', () => {
+  const b = L.blocksFor('2026-11-18', 300, 0)
+  assert.ok(!b.some((x) => /BREAK|FREE|DINNER/.test(x.label)))
+  const c = L.currentBlock(b, 13 * 3600) // 13:00, between uni and prep
+  assert.equal(c.id, 'gap'); assert.equal(c.next.id, 'prep')
+  let s = mk({ '2026-11-18': { ticks: { fajr: true, move: true } } })
+  assert.deepEqual(L.workLeft(s, '2026-11-18'), ['trading checklist + journal', '3h 00m training'])
+  s = mk({ '2026-11-18': { ticks: { fajr: true, move: true, trading: true } } }); s.sessions.push({ date: '2026-11-18', min: 180 })
+  assert.deepEqual(L.workLeft(s, '2026-11-18'), [])
+})

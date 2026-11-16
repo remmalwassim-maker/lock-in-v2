@@ -29,6 +29,13 @@ export function renderNow(c) {
       sub = `Checklist ${n}/${S.settings.checklist.length}. Tick it in Train.`
     }
   }
+  let earned = false
+  if (cur.id === 'gap') {
+    const left = L.workLeft(S, k)
+    earned = !left.length
+    label = earned ? 'EARNED' : 'WORK FIRST'
+    sub = earned ? 'Work is done. Break and free time are yours.' : `Left: ${left.join(', ')}.`
+  }
   const endMs = base + cur.end * 60000 + (cur.id === 'night' && cur.start === 0 ? 0 : 0)
   const goal = L.diffDays(k, L.GOAL_DATE)
   const focus = L.getDay(S, L.addDays(k, -1)).night?.focus
@@ -57,8 +64,8 @@ export function renderNow(c) {
   <section class="hero">
     <div class="eyebrow">NOW</div>
     <h1 class="blk">${esc(label)}</h1>
-    <div class="big amber" data-cd="${endMs}">${countdown((endMs - nowMs()) / 1000)}</div>
-    <div class="sub">${cur.id === 'night' ? 'until your day starts' : `left. Until ${L.hm(cur.end)}`}</div>
+    ${earned ? '' : `<div class="big amber" data-cd="${endMs}">${countdown((endMs - nowMs()) / 1000)}</div>
+    <div class="sub">${cur.id === 'night' ? 'until your day starts' : cur.id === 'gap' ? `until ${cur.next ? cur.next.label.toLowerCase() : 'phone out'}` : `left. Until ${L.hm(cur.end)}`}</div>`}
     ${sub ? `<div class="hint">${esc(sub)}</div>` : ''}
   </section>
   ${nxt ? `<section class="card row2"><div><div class="eyebrow">NEXT</div><div class="h2">${esc(nxt.label)} <span class="mut">${L.hm(nxt.at)}</span></div></div><div class="num" data-cd="${nxtMs}">${countdown((nxtMs - nowMs()) / 1000)}</div></section>` : ''}

@@ -126,21 +126,16 @@ export function blocksFor(k, fajrMin, week) {
   if (fajrMin != null) add('fajr', 'FAJR WINDOW', fajrMin, 480, week < 2 ? 'Pray on time. Back to sleep is allowed.' : 'Pray on time. Stay up.')
   add('up', 'UP. NO PHONE', 480, 510, 'First 30 minutes with no phone.')
   if (weekday) {
-    add('ready', 'GET READY', 510, 540)
     add('uni', 'UNI', 540, 780)
-    add('lunch', 'BREAK', 780, 840, 'Eat. Reset.')
     if (trading) {
       add('prep', 'PREP', 840, 870, 'Checklist first.')
       add('session', 'TRADING SESSION', 870, 930, 'Hard stop at 15:30, or 2 trades.')
       add('journal', 'JOURNAL', 930, 960, 'Journal every trade.')
     } else add('review', 'REVIEW DAY', 840, 960, 'No trading. Review the week.')
-    add('rest', 'BREAK', 960, 975)
     add('gym', 'GYM OR WALK', 975, 1050, 'Back-safe.')
-    add('rest2', 'BREAK', 1050, 1080)
     add('focus', 'FOCUS BLOCK', 1080, 1200, 'One thing only.')
-  } else add('open', 'OPEN DAY', 510, 1200, 'Weekend. One thing that matters.')
-  add('dinner', 'DINNER', 1200, 1230)
-  add('free', 'FREE TIME', 1230, 1350, 'Scrolling is allowed only here.')
+  }
+  // Work only. No scheduled breaks or free time: those are earned (see workLeft).
   add('phone', 'PHONE OUT', 1350, 1440, 'Phone outside the room. Sleep.')
   return B
 }
@@ -148,7 +143,19 @@ export function currentBlock(blocks, sec) {
   const m = sec / 60
   const b = blocks.find((x) => m >= x.start && m < x.end)
   if (b) return { ...b, left: b.end * 60 - sec }
-  return { id: 'night', label: 'PHONE OUT', sub: 'Sleep.', start: 0, end: blocks[0].start, left: blocks[0].start * 60 - sec }
+  const nx = blocks.find((x) => x.start > m)
+  if (nx === blocks[0]) return { id: 'night', label: 'PHONE OUT', sub: 'Sleep.', start: 0, end: nx.start, left: nx.start * 60 - sec }
+  return { id: 'gap', label: 'OPEN', sub: '', start: m, end: nx ? nx.start : 1440, left: (nx ? nx.start * 60 : 86400) - sec, next: nx }
+}
+// What's still owed today. Empty = work done = break and free time are earned.
+export function workLeft(state, k) {
+  const out = []
+  if (!tickValue(state, k, 'fajr')) out.push('Fajr')
+  if (tradingNeeded(state, k) && !tickValue(state, k, 'trading')) out.push('trading checklist + journal')
+  if (!tickValue(state, k, 'move')) out.push('move 20 min')
+  const wd = dow(k) >= 1 && dow(k) <= 5
+  if (wd && trainMin(state, k) < TRAIN_DAY_MIN) out.push(`${fmtMin(TRAIN_DAY_MIN - trainMin(state, k))} training`)
+  return out
 }
 // Anchors for the "next" countdown. prayer = { Fajr:'05:17', Maghrib:'16:33', ... } for that day.
 export function anchorsFor(k, prayerDay) {
@@ -157,7 +164,7 @@ export function anchorsFor(k, prayerDay) {
   if (p('Fajr') != null) A.push({ label: 'Fajr', at: p('Fajr') })
   if (isTradingDay(k)) { A.push({ label: 'Prep', at: 840 }); A.push({ label: 'Session', at: 870 }) }
   if (p('Maghrib') != null) A.push({ label: 'Maghrib', at: p('Maghrib') })
-  A.push({ label: 'Free time', at: 1230 }, { label: 'Phone out', at: 1350 })
+  A.push({ label: 'Phone out', at: 1350 })
   return A.sort((a, b) => a.at - b.at)
 }
 export function remindersFor(state, k, fajrMin) {
