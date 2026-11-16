@@ -132,3 +132,17 @@ test('no scheduled breaks; gap shows work-first until work is done, then earned'
   s = mk({ '2026-11-18': { ticks: { fajr: true, move: true, trading: true } } }); s.sessions.push({ date: '2026-11-18', min: 180 })
   assert.deepEqual(L.workLeft(s, '2026-11-18'), [])
 })
+
+test('flex day: counts as kept, no Minimum Day next day, no 3-in-a-row, max 2 per week', () => {
+  const s = mk({ '2026-11-17': { flex: true }, '2026-11-18': { flex: true }, '2026-11-19': { flex: true } })
+  assert.equal(L.dayKept(s, '2026-11-17'), true)
+  assert.equal(L.minModeActive(s, '2026-11-18'), false)
+  assert.equal(L.threeInRow(s, '2026-11-20'), false)
+  assert.equal(L.canFlex(s, '2026-11-19'), true) // already on: can switch off
+  assert.equal(L.canFlex(s, '2026-11-20'), false) // 3 used in week 1: no more
+  s.days['2026-11-19'].flex = false
+  assert.equal(L.canFlex(s, '2026-11-20'), false) // 2 used
+  s.days['2026-11-18'].flex = false
+  assert.equal(L.canFlex(s, '2026-11-20'), true) // 1 used
+  assert.equal(L.minModeActive(s, '2026-11-20'), true) // unflexed empty day 19 is a miss
+})

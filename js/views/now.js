@@ -34,7 +34,7 @@ export function renderNow(c) {
     const left = L.workLeft(S, k)
     earned = !left.length
     label = earned ? 'EARNED' : 'WORK FIRST'
-    sub = earned ? 'Work is done. Break and free time are yours.' : `Left: ${left.join(', ')}.`
+    sub = earned ? 'Work is done. Break and free time are yours.' : `Left: ${left.join(', ')}. Your call, but work first.`
   }
   const endMs = base + cur.end * 60000 + (cur.id === 'night' && cur.start === 0 ? 0 : 0)
   const goal = L.diffDays(k, L.GOAL_DATE)

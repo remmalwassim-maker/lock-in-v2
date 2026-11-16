@@ -100,6 +100,7 @@ const actions = {
   minTick: (d) => { const r = dayRec(todayKey()); r.minTicks[d.id] = !r.minTicks[d.id]; commit() },
   fullDay: () => { dayRec(todayKey()).fullDay = true; commit() },
   prayer: (d) => { const r = dayRec(todayKey()); r.prayers[d.p] = r.prayers[d.p] === d.v ? null : d.v; commit() },
+  flex: () => { const k = todayKey(); if (!L.canFlex(S, k)) return; const r = dayRec(k); r.flex = !r.flex; commit() },
   upFajr: () => { const r = dayRec(todayKey()); r.upAfterFajr = !r.upAfterFajr; commit() },
   night: nightSheet,
   prep: (d) => { const r = dayRec(todayKey()); r.prep[d.id] = !r.prep[d.id]; commit() },

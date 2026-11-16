@@ -33,6 +33,7 @@ export function renderToday(c) {
   let h = banners(c)
   h += `<div class="eyebrow">${L.prettyDate(k).toUpperCase()}${idx >= 0 && idx < 30 ? ` · DAY ${idx + 1} OF 30` : ''}</div>`
 
+  if (d.flex) h += `<div class="banner ok"><b>FLEX DAY</b><span>Day kept. Do what you can, no penalty.</span></div>`
   if (min) {
     h += `<h1 class="blk">MINIMUM DAY</h1><p class="mut">Three things keep the day. Late beats not at all.</p>
     <div class="list">
@@ -50,6 +51,8 @@ export function renderToday(c) {
     const v = d.prayers[p]
     return `<div class="pray"><b>${PNAME[p]}</b><div class="seg">${[['on', 'On time'], ['late', 'Late'], ['missed', 'Missed']].map(([val, lab]) => `<button class="${v === val ? 'sel ' + val : ''}" data-act="prayer" data-p="${p}" data-v="${val}">${lab}</button>`).join('')}</div></div>`
   }).join('')}</div>`
+  const fl = L.flexUsed(S, w)
+  h += `<div class="eyebrow top">FLEXIBILITY</div><button class="toggle ${d.flex ? 'on' : ''}" data-act="flex" ${!d.flex && fl >= L.FLEX_PER_WEEK ? 'disabled' : ''}><span>Flex day. Sick, travelling, or life got in the way. Keeps the day, no penalty.</span><b>${d.flex ? 'ON' : `${L.FLEX_PER_WEEK - fl} left this week`}</b></button>`
   if (L.WEEKS[w].up != null) h += `<div class="nn ${d.upAfterFajr ? 'done' : ''}" data-act="upFajr"><span class="box">${d.upAfterFajr ? 'OK' : '+'}</span><div class="grow"><b>Stayed up after Fajr</b><small>Target ${L.WEEKS[w].up}+ days this week</small></div></div>`
   return h
 }

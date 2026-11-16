@@ -62,11 +62,19 @@ export const minDone = (d) => !!(d.minTicks.fajr && d.minTicks.phone && String(d
 // Minimum Day: yesterday (inside the plan) was not kept, and today isn't overridden with "full day".
 export function minModeActive(state, k) {
   if (dayIndex(state.startDate, addDays(k, -1)) < 0) return false
-  if (getDay(state, k).fullDay) return false
+  if (getDay(state, k).fullDay || getDay(state, k).flex) return false
   return !dayKept(state, addDays(k, -1))
 }
 // A day is kept with 3+ of 5 ticks, or (in Minimum Day mode) the 3 minimum ticks.
+// Flex day: sick, travelling, life happened. Counts as kept, 2 per week, no penalty.
+export const FLEX_PER_WEEK = 2
+export const flexUsed = (state, w) => weekDates(state.startDate, w).filter((k) => getDay(state, k).flex).length
+export function canFlex(state, k) {
+  const d = getDay(state, k)
+  return d.flex || flexUsed(state, weekOf(state.startDate, k)) < FLEX_PER_WEEK
+}
 export function dayKept(state, k) {
+  if (getDay(state, k).flex) return true
   if (tickCount(state, k) >= 3) return true
   return minModeActive(state, k) && minDone(getDay(state, k))
 }
@@ -86,6 +94,7 @@ export function dayScore(state, k) {
   const t = effTicks(state, k)
   const wd = dow(k) >= 1 && dow(k) <= 5
   const tr = Math.min(1, trainMin(state, k) / TRAIN_DAY_MIN)
+  if (getDay(state, k).flex) return Math.max(60, Math.round(wd ? 70 * (t / 5) + 30 * tr : 100 * (t / 5)))
   return Math.round(wd ? 70 * (t / 5) + 30 * tr : 100 * (t / 5))
 }
 
@@ -225,6 +234,7 @@ export function weekRows(state, w) {
   row('Movement days', `${s.moveDays}/${s.n}`, String(s.n), s.moveDays >= s.n)
   row('Night checks', `${s.nightChecks}/${s.n}`, String(s.n), s.nightChecks >= s.n)
   row('Urges beaten', s.urgesTotal ? `${s.urgesBeaten}/${s.urgesTotal}` : '0', '-', null)
+  row('Flex days used', `${flexUsed(state, w)}`, `max ${FLEX_PER_WEEK}`, null)
   return rows
 }
 
